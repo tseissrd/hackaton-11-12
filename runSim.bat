@@ -1,0 +1,1 @@
+node simulation ./trips ./cumulativePowerOutputData.json 1000

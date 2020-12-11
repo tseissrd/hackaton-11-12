@@ -1,5 +1,10 @@
+// takes
+// 1: path to the data folder
+// 2 (optional): power handle position to search the data for
+
 const fs = require('fs');
 const path = require('path');
+const fileUtils = require('./fileUtils');
 
 const sourceDataFolder = path.join(__dirname, 'trips');
 const verbose = false;
@@ -33,14 +38,14 @@ async function giveOneMeasurement(sourceDataFolder, options) {
 		measurementFiles[checkedType] = `${measurementTypes[checkedType]}${measuredPeriod}`;
 	}
 
-	const linesTotal = await countFileLines(path.join(sourceDataFolder, randomMeasurementsFile));
+	const linesTotal = await fileUtils.countFileLines(path.join(sourceDataFolder, randomMeasurementsFile));
 	const numOfLineToRead = Math.floor(Math.random()*linesTotal) + 1;
 	const measurementsAtTimestamp = {};
 
 	for (const measurementType of Object.keys(measurementTypes)) {
 		const filePath = path.join(sourceDataFolder, measurementFiles[measurementType]);
 		try {
-			measurementsAtTimestamp[measurementType] = await readCertainLine(filePath, numOfLineToRead)
+			measurementsAtTimestamp[measurementType] = await fileUtils.readCertainLine(filePath, numOfLineToRead)
 		} catch(err) {
 			if (verbose)
 				console.error(`could not read from ${filePath} (does the file exist?)`);
@@ -75,6 +80,8 @@ async function giveOneMeasurement(sourceDataFolder, options) {
 			values = await giveOneMeasurement(sourceDataFolder, options);
 		}
 	}
+
+	values['timestamp'] = timestamp;
 	return values;
 }
 
@@ -108,61 +115,6 @@ if (process.argv[2]) {
 		lookForPosition: Number(process.argv[3])
 	} : {}).then(values => console.log(values))
 } else
-	generateMeasurements(sourceDataFolder, {samePositionForAtLeast: 4});
-
-function countFileLines(filePath){
-	return new Promise((resolve, reject) => {
-		let lineCount = 0;
-		fs.createReadStream(filePath)
-			.on("data", (buffer) => {
-				let idx = -1;
-				lineCount--;
-				do {
-					idx = buffer.indexOf(10, idx+1);
-					lineCount++;
-				} while (idx !== -1);
-			}).on("end", () => {
-			resolve(lineCount);
-		}).on("error", reject);
+	generateMeasurements(sourceDataFolder, {
+		samePositionForAtLeast: 4
 	});
-}
-
-function readCertainLine(filePath, lineNum){
-	return new Promise((resolve, reject) => {
-		let lineCount = 0;
-		let wantedLine;
-		const readStream = fs.createReadStream(filePath);
-
-		readStream.on("data", (buffer) => {
-			let idx = -1;
-			let nextIdx;
-			lineCount--;
-			do {
-				idx = buffer.indexOf(10, idx + 1);
-				if (idx !== -1)
-					nextIdx = buffer.indexOf(10, idx + 1);
-				lineCount++;
-				if (lineCount === (lineNum - 2)) {
-					if (!wantedLine || wantedLine.length === 0) {
-						wantedLine = buffer.slice(idx + 1);
-						if (nextIdx !== -1) {
-							wantedLine = wantedLine.slice(0, nextIdx - idx);
-							readStream.close();
-							return resolve(wantedLine.toString());
-						}
-					} else {
-						if (idx !== -1) {
-							wantedLine += buffer.slice(0, idx + 1);
-							readStream.close();
-							return resolve(wantedLine.toString());
-						} else {
-							wantedLine += buffer;
-						}
-					}
-				}
-			} while (idx !== -1);
-		}).on("end", () => {
-			resolve(wantedLine.toString());
-		}).on("error", reject);
-	});
-}
