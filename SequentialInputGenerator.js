@@ -2,11 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const fileUtils = require('./fileUtils');
 
-const measurementTypes = {
-  'voltage': 'Voltage_generator_',
-  'position': 'PozKontS_',
-  'current': 'Current_generator_'
-}
+const {measurementTypes} = require('./commonData.json');
 const sourceDataFolder = path.join(__dirname, 'trips');
 const verbose = false;
 
@@ -14,7 +10,12 @@ class SequentialInputGenerator {
 
   constructor(sourceDataFolder, options) {
     const allFiles = fs.readdirSync(sourceDataFolder);
-    const randomMeasurementsFile = allFiles[Math.floor(Math.random()*allFiles.length)];
+
+    let randomMeasurementsFile;
+    if (options && options.file)
+      randomMeasurementsFile = options.file;
+    else
+      randomMeasurementsFile = allFiles[Math.floor(Math.random() * allFiles.length)];
 
     const measurementFiles = {};
     let measurementType = null;
@@ -37,6 +38,8 @@ class SequentialInputGenerator {
 
     if (options && options.verbose)
       this.verbose = options.verbose;
+    if (options && options.skipChecks)
+      this.skipChecks = true;
 
     this.sourceDataFolder = sourceDataFolder;
     this.measurementFiles = measurementFiles;
@@ -75,7 +78,7 @@ class SequentialInputGenerator {
 
       if (!timestamp)
         timestamp = match[1];
-      else if (match[1] !== timestamp) {
+      else if ((!this.skipChecks) && (match[1] !== timestamp)) {
         if (this.verbose)
           console.error('timestamps do not match in\n', this.measurementFiles, `\nat line ${this.nextLine}`);
         this.nextLine += 1;

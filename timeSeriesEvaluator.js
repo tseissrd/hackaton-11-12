@@ -7,18 +7,16 @@
 module.exports = appendToSeries;
 
 const LAST_VALUE_WEIGHT = 0.6;
-const NUMBER_OF_POWER_HANDLE_POSITIONS = 16;
-const DATA_EXPIRES_AFTER = 1000*60*60*24*4; // ms
+const NUMBER_OF_POWER_HANDLE_POSITIONS = require('./commonData.json').handlePositions;
+const DATA_EXPIRES_AFTER = require('./commonData.json').dataExpiresAfter; // ms
 
 const fs = require('fs');
 const path = require('path');
 
-let cumulativeDataFile = path.join(__dirname, 'cumulativePowerOutputData.json');
-
 function appendToSeries(file, position, value, timestamp) {
   let cumulativeData = null;
 
-  if (!fs.existsSync(cumulativeDataFile)) {
+  if (!fs.existsSync(file)) {
     cumulativeData = [];
     for (let i = 0; i < NUMBER_OF_POWER_HANDLE_POSITIONS; i += 1)
       cumulativeData.push({
@@ -26,26 +24,27 @@ function appendToSeries(file, position, value, timestamp) {
         lastUpdated: null
       });
   } else {
-    cumulativeData = require(cumulativeDataFile);
-    if (cumulativeData.length < NUMBER_OF_POWER_HANDLE_POSITIONS)
-      for (let i = 0; i < (NUMBER_OF_POWER_HANDLE_POSITIONS - cumulativeData.length); i += 1)
-        cumulativeData.push({
-          meanOutput: 0,
-          lastUpdated: null
-        });
+    cumulativeData = require(file);
+    while (cumulativeData.length < NUMBER_OF_POWER_HANDLE_POSITIONS)
+      cumulativeData.push({
+        meanOutput: 0,
+        lastUpdated: null
+      });
   }
 
-  const updateTime = new Date(convertToIsoDate(timestamp));
+  if (file && position && value && timestamp) {
+    const updateTime = (new Date(convertToIsoDate(timestamp))).getTime();
 
-  if (
-    (!cumulativeData[position].lastUpdated)
-    || ((updateTime.getTime() - (new Date(cumulativeData[position].lastUpdated)).getTime()) > DATA_EXPIRES_AFTER)
-  )
-    cumulativeData[position]['meanOutput'] = value;
-  else
-    cumulativeData[position]['meanOutput'] = ((1 - LAST_VALUE_WEIGHT) * cumulativeData[position]['meanOutput']) + (LAST_VALUE_WEIGHT * value);
+    if (
+      (!cumulativeData[position].lastUpdated)
+      || ((updateTime - cumulativeData[position].lastUpdated) > DATA_EXPIRES_AFTER)
+    )
+      cumulativeData[position]['meanOutput'] = value;
+    else
+      cumulativeData[position]['meanOutput'] = Math.floor(((1 - LAST_VALUE_WEIGHT) * cumulativeData[position]['meanOutput']) + (LAST_VALUE_WEIGHT * value));
 
-  cumulativeData[position]['lastUpdated'] = (updateTime).toISOString();
+    cumulativeData[position]['lastUpdated'] = updateTime;
+  }
 
   fs.writeFileSync(file, JSON.stringify(cumulativeData, null, 2));
 }

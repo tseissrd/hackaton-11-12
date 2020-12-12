@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>example dashboard</title>
+    <style>
+        .lights-container {;
+            width: 90px;
+            height: 1100px;
+            float: left;
+        }
+
+        .actions-container {
+            width: 400px;
+            height: 100px;
+            float: left;
+        }
+
+        .actions {
+            width: 400px;
+            height: 40px;
+            float: left;
+        }
+
+        .actions-subtitle {
+            width: 320px;
+            float: left;
+            text-align: center;
+        }
+
+        div.light-container {
+            text-align: center;
+            justify-content: center;
+        }
+
+        img.light-bulb {
+        }
+
+        .centered {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .main-container {
+            width: 100pc;
+            height: 100pc;
+        }
+
+        table, table td, table th {
+            border-collapse: collapse;
+            border: 1px solid black;
+        }
+    </style>
+    <script type="application/json" src="../cumulativePowerOutputData.json"></script>
+</head>
+<body>
+    <div class="main-container">
+        <div id="lightsContainer" class="lights-container">
+            <table id="outputTable"></table>
+        </div>
+
+        <div id="actions-container" class="actions-container">
+            <div id="actions" class="actions">
+                <button id="refresh" onclick="loadSignals()">Обновить</button>
+                <button id="simulate30" onclick="simulateFor30()">Симуляция 30 минут</button>
+                <button id="simulate60" onclick="simulateFor60()">Симуляция 1 час</button>
+            </div>
+            <div id="actions-subtitle" class="actions-subtitle"></div>
+        </div>
+    </div>
+    
+    <script>
+      function loadSignals() {
+        const url = 'http://127.0.0.1:8888/loadSignals';
+        fetch(url)
+          .catch(err => console.error(err))
+          .then(response => {
+            response.json()
+              .catch(err => console.error(err))
+              .then(signals => {
+                // const signals = [
+                //   1,
+                //   3,
+                //   2,
+                //   2,
+                //   3,
+                //   0
+                // ];
+
+                const lights = {
+                  '1': './green.png',
+                  '2': './yellow.png',
+                  '3': './red.png',
+                  '0': './white.png',
+                }
+
+                const lightsContainer = document.getElementById('lightsContainer');
+                const positionsTable = document.getElementById('outputTable');
+
+                while(positionsTable.firstChild)
+                  positionsTable.removeChild(positionsTable.firstChild);
+
+                let i = 0;
+                for (const light of signals) {
+                  i += 1;
+                  const tableRow = document.createElement('tr');
+                  positionsTable.appendChild(tableRow);
+                  const tableColumn = document.createElement('td');
+                  tableRow.appendChild(tableColumn);
+
+                  const lightContainer = document.createElement('div');
+                  lightContainer.className = 'light-container';
+                  const lightImg = document.createElement('img');
+                  lightImg.className = 'light-bulb centered';
+                  lightImg.src = lights[light];
+                  lightContainer.appendChild(lightImg);
+
+                  const titleNode = document.createElement('div');
+                  titleNode.innerText = `Позиция ${i}`
+                  lightContainer.appendChild(titleNode);
+
+                  tableColumn.appendChild(lightContainer);
+                }
+                lightsContainer.appendChild(positionsTable);
+              });
+          });
+      }
+
+      function initSimulator() {
+        return new Promise((resolve, reject) => {
+          const url = 'http://127.0.0.1:8888/initSimulator';
+          fetch(url)
+            .catch(err => console.error(err))
+            .then(() => {
+              loadSignals();
+              return resolve(true);
+            });
+        });
+      }
+      function simulateFor30() {
+        const actionsSubtitle = document.getElementById('actions-subtitle');
+        actionsSubtitle.innerText = 'Выполняется симуляция...';
+
+        return new Promise((resolve, reject) => {
+          const url = 'http://127.0.0.1:8888/simulateFor30';
+          fetch(url)
+            .catch(err => console.error(err))
+            .then(() => {
+              console.log('simulated for 30 minutes')
+              loadSignals();
+              actionsSubtitle.innerText = '';
+              return resolve(true);
+            });
+        });
+      }
+      function simulateFor60() {
+        const actionsSubtitle = document.getElementById('actions-subtitle');
+        actionsSubtitle.innerText = 'Выполняется симуляция...';
+
+        return new Promise((resolve, reject) => {
+          const url = 'http://127.0.0.1:8888/simulateFor60';
+          fetch(url)
+            .catch(err => console.error(err))
+            .then(() => {
+              console.log('simulated for 1 hour');
+              loadSignals();
+              actionsSubtitle.innerText = '';
+              resolve(true)
+            });
+        });
+      }
+
+      initSimulator();
+    </script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "measurementTypes": {
+    "voltage": "Voltage_generator_",
+    "position": "PozKontS_",
+    "current": "Current_generator_"
+  },
+  "expectedOutput": [
+    0,
+    75,
+    180,
+    265,
+    367,
+    485,
+    612,
+    695,
+    825,
+    945,
+    1065,
+    1185,
+    1315,
+    1435,
+    1600,
+    1775
+  ],
+  "dataExpiresAfter": 345600000,
+  "handlePositions": 16
+}
