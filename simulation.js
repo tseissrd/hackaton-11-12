@@ -18,10 +18,10 @@ const cumulativeData = require('./cumulativePowerOutputData.json');
 const VALUES_TO_SKIP_AFTER_THE_HANDLE_POSITION_CHANGE = 3;
 
 async function runSimulation(sourceDataFolder, sourceFile, outputFile, time, resumeFrom = 0) {
-  // temporary shortcut for initialization
+  // shortcut for initialization
   if (time === 0) {
-    timeSeriesEvaluator(outputFile)
-    const signals = await generateSignals(outputFile, expectedPower);
+    timeSeriesEvaluator.generateMeanOutput(outputFile, resumeFrom + time);
+    const signals = generateSignals(outputFile, expectedPower);
     fs.writeFileSync(path.join(__dirname, 'signals.json'), JSON.stringify(signals, null, 2));
     return signals;
   }
@@ -90,13 +90,14 @@ async function runSimulation(sourceDataFolder, sourceFile, outputFile, time, res
       continue;
     }
 
-    timeSeriesEvaluator(outputFile, values.position, power, values.timestamp)
+    timeSeriesEvaluator.appendToSeries(outputFile, values.position, power, values.timestamp)
     console.log(`appended ${power} to ${values.position} at ${values.timestamp}`);
 
     // await new Promise((resolve) => setTimeout(resolve, interval));
   }
 
-  const signals = await generateSignals(outputFile, expectedPower);
+  timeSeriesEvaluator.generateMeanOutput(outputFile, resumeFrom + time);
+  const signals = generateSignals(outputFile, expectedPower);
   fs.writeFileSync(path.join(__dirname, 'signals.json'), JSON.stringify(signals, null, 2));
   return signals;
 }
@@ -106,7 +107,7 @@ async function runSimulation(sourceDataFolder, sourceFile, outputFile, time, res
 //
 // runSimulation(process.argv[2], process.argv[3], Number(process.argv[4]));
 
-async function generateSignals(cumulativeDataPath, expectedPower, time) {
+function generateSignals(cumulativeDataPath, expectedPower, time) {
   const signals = [];
 
   const cumulativeData = require(cumulativeDataPath);
@@ -117,7 +118,7 @@ async function generateSignals(cumulativeDataPath, expectedPower, time) {
 
     const lastDataUpdate = cumulativeData[handlePosition].lastUpdated;
 
-    if ((lastDataUpdate === null) || ((time - lastDataUpdate) > DATA_EXPIRES_AFTER))
+    if ((output === null) || ((lastDataUpdate === null) || ((time - lastDataUpdate) > DATA_EXPIRES_AFTER)))
       signals.push(0)
     else if (output < 0.5*expectedOutput)
       signals.push(3);
