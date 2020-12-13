@@ -4,23 +4,58 @@
     <meta charset="UTF-8">
     <title>example dashboard</title>
     <style>
+		.main-container {
+			margin: auto;
+			top: 0;
+			left: 0;
+            width: 760px;
+            height: 600px;
+			position: relative;
+			align-self: center;
+        }
+		
+		.main-panel {
+			margin: auto;
+			top: 0;
+			left: 50px;
+			position: absolute;
+		}
+		
+		.legend-container {
+			border: 1px solid black;
+			margin-left: 10px;
+			margin-right: 10px;
+			height: 400px;
+			font-size: 20px;
+		}
+	
         .lights-container {;
-            width: 90px;
-            height: 1100px;
-            float: left;
+			margin-top: 10px;
+            width: 744px;
+            height: 90px;
+			align: center;
+			position: relative;
         }
 
         .actions-container {
-            width: 400px;
-            height: 100px;
+            width: 744px;
+            height: 60px;
             float: left;
+			bottom: 0;
+			position: absolute;
         }
 
         .actions {
-            width: 400px;
+			position: absolute;
+            width: 430px;
             height: 40px;
-            float: left;
+			bottom: 5px;
+			right: 0;
         }
+		
+		.action {
+			font-size: 14px;
+		}
 
         .actions-subtitle {
             width: 320px;
@@ -42,11 +77,6 @@
             margin-right: auto;
         }
 
-        .main-container {
-            width: 100pc;
-            height: 100pc;
-        }
-
         table, table td, table th {
             border-collapse: collapse;
             border: 1px solid black;
@@ -55,20 +85,41 @@
     <script type="application/json" src="../cumulativePowerOutputData.json"></script>
 </head>
 <body>
-    <div class="main-container">
-        <div id="lightsContainer" class="lights-container">
-            <table id="outputTable"></table>
-        </div>
+	<table class="main-panel">
+		<tr>
+			<td>
+				<div class="main-container">
+					<div id="lightsContainer" class="lights-container centered">
+						<table id="outputTable">
+							<tr id="table-lights-row"></tr>
+						</table>
+					</div>
+					
+					<div id="legend-container" class="legend-container">
+						Оценка состояния дизельной генераторной установке на основе мониторинга силы тока и напряжения сети.<br>
+						Изображение светодиодной ленты показывает оценку состояния ДГУ по выходной мощности на каждом из позиций
+						контроллера машиниста (КМ).<br> Слева направо расположены светодиоды, соответствующие позициям контроллера
+						с 1 по 15.<br>
+						<br>
+						Цвет светодиода отражает оценку состояния ДГУ:<br>
+						1. Белый - информации нет.<br>
+						2. Зеленый - состояние соответствует нормативному.<br>
+						3. Желтый - отклонение мощности от нормативной от 15% до 50%.<br>
+						4. Красный - отклонение мощности от нормативной более 50%.
+					</div>
 
-        <div id="actions-container" class="actions-container">
-            <div id="actions" class="actions">
-                <button id="refresh" onclick="loadSignals()">Обновить</button>
-                <button id="simulate30" onclick="simulateFor30()">Симуляция 30 минут</button>
-                <button id="simulate60" onclick="simulateFor60()">Симуляция 1 час</button>
-            </div>
-            <div id="actions-subtitle" class="actions-subtitle"></div>
-        </div>
-    </div>
+					<div id="actions-container" class="actions-container">
+						<div id="actions" class="actions">
+							<button id="refresh" class="action" onclick="loadSignals()">Обновить</button>
+							<button id="simulate30" class="action" onclick="simulateFor30()">Симуляция 30 минут</button>
+							<button id="simulate60" class="action" onclick="simulateFor60()">Симуляция 1 час</button>
+						</div>
+						<div id="actions-subtitle" class="actions-subtitle"></div>
+					</div>
+				</div>
+			</td>
+		</tr>
+	</table>
     
     <script>
       function loadSignals() {
@@ -97,15 +148,19 @@
 
                 const lightsContainer = document.getElementById('lightsContainer');
                 const positionsTable = document.getElementById('outputTable');
+				const tableRow = document.getElementById('table-lights-row');
 
-                while(positionsTable.firstChild)
-                  positionsTable.removeChild(positionsTable.firstChild);
+                // while(positionsTable.firstChild)
+                //   positionsTable.removeChild(positionsTable.firstChild);
+				
+				while(tableRow.firstChild)
+                  tableRow.removeChild(tableRow.firstChild);
 
                 let i = 0;
                 for (const light of signals) {
                   i += 1;
-                  const tableRow = document.createElement('tr');
-                  positionsTable.appendChild(tableRow);
+                  // const tableRow = document.createElement('tr');
+                  // positionsTable.appendChild(tableRow);
                   const tableColumn = document.createElement('td');
                   tableRow.appendChild(tableColumn);
 
@@ -116,9 +171,9 @@
                   lightImg.src = lights[light];
                   lightContainer.appendChild(lightImg);
 
-                  const titleNode = document.createElement('div');
-                  titleNode.innerText = `Позиция ${i}`
-                  lightContainer.appendChild(titleNode);
+                  // const titleNode = document.createElement('div');
+                  // titleNode.innerText = `Позиция ${i}`
+                  // lightContainer.appendChild(titleNode);
 
                   tableColumn.appendChild(lightContainer);
                 }
